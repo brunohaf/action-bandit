@@ -87,4 +87,59 @@ set +x
 echo "reviewdog exited with exit status $reviewdog_rc"
 echo '::endgroup::'
 
+# Print github summary 
+if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
+  {
+    echo "## Bandit Security Report"
+    echo
+
+    if [[ ! -s "$RDTMP/bandit.json" ]]; then
+      echo "_No results (empty bandit.json)_"
+      echo
+    else
+      if command -v jq &>/dev/null; then
+        total=$(jq '.results | length' "$RDTMP/bandit.json")
+        echo "**Findings:** ${total}"
+        echo
+        echo "| Severity | Count |"
+        echo "|---|---:|"
+        for sev in LOW MEDIUM HIGH; do
+          count=$(jq --arg s "$sev" '[.results[] | select(.issue_severity == $s)] | length' "$RDTMP/bandit.json")
+          echo "| $sev | $count |"
+        done
+        echo
+        echo "### Top findings"
+        echo
+        jq -r '
+          def rank:
+            if . == "HIGH" then 1
+            elif . == "MEDIUM" then 2
+            elif . == "LOW" then 3
+            else 0 end;
+
+          .results
+          | sort_by([
+              ( .issue_severity   | rank ),    
+              ( .issue_confidence | rank ),    
+              ( .filename | ascii_downcase ),       
+              .line_number                       
+            ])
+          | .[0:50]
+          | .[]
+          | "- **\(.issue_severity)** (confidence: \(.issue_confidence)) [\(.test_id)] \(.filename):\(.line_number)\n  - \(.issue_text)"
+        ' "$RDTMP/bandit.json"
+
+        echo
+      else
+        echo "_jq not available; showing raw JSON._"
+        echo
+        echo '```json'
+        cat "$RDTMP/bandit.json"
+        echo '```'
+        echo
+      fi
+    fi
+  } >> "$GITHUB_STEP_SUMMARY"
+fi
+
 exit $reviewdog_rc
