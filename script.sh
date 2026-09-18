@@ -14,6 +14,7 @@ install_tool() {
   fi
 }
 
+# shellcheck disable=SC2329  # invoked by the EXIT trap, which shellcheck does not follow
 cleanup() {
   if [[ -n "${RDTMP:-}" ]] && [[ -d "${RDTMP}" ]]; then
     rm -rf "$RDTMP"
