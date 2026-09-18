@@ -1,0 +1,12 @@
+version: 2
+updates:
+  # "/" covers .github/workflows and the composite action.yml at the root.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels:
+      # action-bumpr skips the release entirely when no bump label is attached.
+      - "bump:patch"
+    commit-message:
+      prefix: chore
