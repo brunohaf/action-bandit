@@ -32,6 +32,7 @@ print_output() {
 print_summary() {
   local report="$1"
 
+  [ "${INPUT_SUMMARY:-false}" == "true" ] || return 0
   [ -n "${GITHUB_STEP_SUMMARY:-}" ] || return 0
 
   python3 "${BASE_PATH}/job_summary.py" <"$report" >>"$GITHUB_STEP_SUMMARY"

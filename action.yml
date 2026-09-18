@@ -17,6 +17,9 @@ inputs:
   verbose:
     description: 'Verbose mode'
     default: 'false'
+  summary:
+    description: 'Write a findings report to the GitHub job summary [true,false].'
+    default: 'false'
   ### Flags for reviewdog ###
   tool_name:
     description: 'Tool name to use for reviewdog reporter.'
@@ -58,6 +61,7 @@ runs:
         INPUT_REVIEWDOG_FLAGS: ${{ inputs.reviewdog_flags }}
         INPUT_BANDIT_FLAGS: ${{ inputs.bandit_flags }}
         INPUT_VERBOSE: ${{ inputs.verbose }}
+        INPUT_SUMMARY: ${{ inputs.summary }}
 
 # Ref: https://haya14busa.github.io/github-action-brandings/
 branding:
