@@ -36,8 +36,13 @@ inputs:
   fail_on_error:
     description: |
       Exit code for reviewdog when errors are found [true,false].
-      Default is `false`.
+      Deprecated: use `fail_level` instead.
     default: 'false'
+  fail_level:
+    description: |
+      Fail the action when an issue at or above this level is found
+      [none,any,info,warning,error]. Default is to never fail.
+    default: ''
   reviewdog_flags:
     description: 'Additional reviewdog flags.'
     default: ''
@@ -58,6 +63,7 @@ runs:
         INPUT_REPORTER: ${{ inputs.reporter }}
         INPUT_FILTER_MODE: ${{ inputs.filter_mode }}
         INPUT_FAIL_ON_ERROR: ${{ inputs.fail_on_error }}
+        INPUT_FAIL_LEVEL: ${{ inputs.fail_level }}
         INPUT_REVIEWDOG_FLAGS: ${{ inputs.reviewdog_flags }}
         INPUT_BANDIT_FLAGS: ${{ inputs.bandit_flags }}
         INPUT_VERBOSE: ${{ inputs.verbose }}

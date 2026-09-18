@@ -80,6 +80,19 @@ read -ra REVIEWDOG_FLAGS <<<"${INPUT_REVIEWDOG_FLAGS:-}"
   REVIEWDOG_FLAGS+=(-tee)
 }
 
+# reviewdog deprecated -fail-on-error in favour of -fail-level. The old flag
+# meant a different level per reporter, so map it the way reviewdog did.
+# https://github.com/reviewdog/reviewdog/blob/master/CHANGELOG.md
+FAIL_LEVEL="${INPUT_FAIL_LEVEL:-}"
+if [ "${INPUT_FAIL_ON_ERROR:-false}" == "true" ]; then
+  echo "::warning::action-bandit: 'fail_on_error' is deprecated, use 'fail_level' instead."
+  if [ -z "$FAIL_LEVEL" ]; then
+    case "${INPUT_REPORTER:-github-pr-review}" in
+    github-check | github-pr-check) FAIL_LEVEL="error" ;;
+    *) FAIL_LEVEL="any" ;;
+    esac
+  fi
+fi
 
 # Run reviewdog
 echo '::group:: Running bandit with reviewdog 🐶 ...'
@@ -89,7 +102,7 @@ reviewdog -f=rdjson \
   -name="${INPUT_TOOL_NAME}" \
   -reporter="${INPUT_REPORTER:-github-pr-review}" \
   -filter-mode="${INPUT_FILTER_MODE}" \
-  -fail-on-error="${INPUT_FAIL_ON_ERROR}" \
+  -fail-level="${FAIL_LEVEL}" \
   -level="${INPUT_LEVEL}" \
   "${REVIEWDOG_FLAGS[@]}" <"$RDTMP/bandit_rdjson.json"
 
