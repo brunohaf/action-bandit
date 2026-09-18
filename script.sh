@@ -59,7 +59,8 @@ bandit --version
 # Prepare bandit arguments
 BANDIT_ARGS=()
 [ -n "${INPUT_BANDIT_CONFIG:-}" ] && BANDIT_ARGS+=(-c "${INPUT_BANDIT_CONFIG}")
-[ -n "${INPUT_BANDIT_FLAGS:-}" ] && BANDIT_ARGS+=("${INPUT_BANDIT_FLAGS}")
+read -ra BANDIT_FLAGS <<<"${INPUT_BANDIT_FLAGS:-}"
+BANDIT_ARGS+=("${BANDIT_FLAGS[@]}")
 
 # Create temporary directory and set trap for cleanup
 RDTMP=$(mktemp -d)
@@ -71,13 +72,14 @@ bandit "${BANDIT_ARGS[@]}" -f json -o "$RDTMP/bandit.json" -r . --exit-zero
 python3 "${BASE_PATH}/bandit_to_rdjson/rd_converter.py" <"$RDTMP/bandit.json" >"$RDTMP/bandit_rdjson.json"
 
 # Configure reviewdog flags
-REVIEWDOG_FLAGS="${INPUT_BANDIT_FLAGS:-}"
+read -ra REVIEWDOG_FLAGS <<<"${INPUT_REVIEWDOG_FLAGS:-}"
 [ "${INPUT_VERBOSE:-false}" == "true" ] && {
   set +x
   print_output "$RDTMP/bandit.json" "original json output"
   print_output "$RDTMP/bandit_rdjson.json" "converted rdjson output"
-  REVIEWDOG_FLAGS="$REVIEWDOG_FLAGS -tee"
+  REVIEWDOG_FLAGS+=(-tee)
 }
+
 
 # Run reviewdog
 echo '::group:: Running bandit with reviewdog 🐶 ...'
@@ -89,7 +91,7 @@ reviewdog -f=rdjson \
   -filter-mode="${INPUT_FILTER_MODE}" \
   -fail-on-error="${INPUT_FAIL_ON_ERROR}" \
   -level="${INPUT_LEVEL}" \
-  "${REVIEWDOG_FLAGS}" <"$RDTMP/bandit_rdjson.json"
+  "${REVIEWDOG_FLAGS[@]}" <"$RDTMP/bandit_rdjson.json"
 
 reviewdog_rc=$?
 
