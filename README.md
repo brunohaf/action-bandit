@@ -61,7 +61,7 @@
 | ----------------- | --------------------------------------------------------------------- | --------------------- |
 | `github_token`    | GitHub Token for API access                                           | `${{ github.token }}` |
 | `workdir`         | Directory relative to root to run Bandit                              | `.`                   |
-| `bandit_config`   | Path to Bandit configuration file                                     | `pyproject.toml`      |
+| `bandit_config`   | Path to Bandit configuration file                                     | `""`                  |
 | `bandit_flags`    | Extra Bandit CLI flags                                                | `""`                  |
 | `verbose`         | Enable verbose logging                                                | `false`               |
 | `summary`         | Write a findings report to the GitHub job summary                     | `false`               |
@@ -69,8 +69,17 @@
 | `level`           | Report level (`info`, `warning`, `error`)                             | `error`               |
 | `reporter`        | Reporter type (`github-check`, `github-pr-review`, `github-pr-check`) | `github-check`        |
 | `filter_mode`     | Filtering mode (`added`, `diff_context`, `file`, `nofilter`)          | `added`               |
-| `fail_on_error`   | Whether to fail the build when errors are found                       | `false`               |
+| `fail_level`      | Fail when an issue at or above this level is found (`none`, `any`, `info`, `warning`, `error`) | `""` (never fails) |
+| `fail_on_error`   | **Deprecated** — use `fail_level`. Whether to fail the build when errors are found | `false`               |
 | `reviewdog_flags` | Additional flags for reviewdog                                        | `""`                  |
+
+Bandit severities reach reviewdog as `HIGH` → `error`, `MEDIUM` → `warning`,
+`LOW` → `info`, so `fail_level: error` fails only on high-severity findings.
+
+`fail_on_error` meant a different threshold depending on `reporter` — any
+finding for `github-pr-review`, error-level only for `github-check` and
+`github-pr-check`. It still maps to that same threshold, and warns. `fail_level`
+means the same thing whatever the reporter.
 
 ### Configuration Example
 

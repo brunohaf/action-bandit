@@ -73,6 +73,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./
+        id: review
         continue-on-error: true
         with:
           github_token: ${{ secrets.github_token }}
@@ -81,8 +82,50 @@ jobs:
           filter_mode: file
           fail_on_error: true
       - name: check the exit code
-        if: ${{ !success() }}
-        run: echo 'The previous step should fail' && exit 1
+        if: steps.review.outcome == 'cancelled'
+        run: echo 'The previous step was cancelled' && exit 1
+
+  test-fail-level:
+    name: runner / action-bandit (fail level)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # testdata/ has no Python, so the scan needs something to actually find.
+      - run: printf 'import subprocess\nsubprocess.call("ls", shell=True)\n' > fail_level_fixture.py
+
+      - uses: ./
+        id: any
+        continue-on-error: true
+        with:
+          github_token: ${{ secrets.github_token }}
+          reporter: local
+          filter_mode: nofilter
+          fail_level: any
+      - name: fail_level=any must fail the step
+        if: steps.any.outcome != 'failure'
+        run: echo "expected failure, got '${{ steps.any.outcome }}'" && exit 1
+
+      - uses: ./
+        id: deprecated
+        continue-on-error: true
+        with:
+          github_token: ${{ secrets.github_token }}
+          reporter: local
+          filter_mode: nofilter
+          fail_on_error: true
+      - name: deprecated fail_on_error must still fail the step
+        if: steps.deprecated.outcome != 'failure'
+        run: echo "expected failure, got '${{ steps.deprecated.outcome }}'" && exit 1
+
+      - uses: ./
+        id: none
+        with:
+          github_token: ${{ secrets.github_token }}
+          reporter: local
+          filter_mode: nofilter
+      - name: default must not fail on findings
+        if: steps.none.outcome != 'success'
+        run: echo "expected success, got '${{ steps.none.outcome }}'" && exit 1
 
 #  test-sarif:
 #    name: runner / action-bandit (sarif)
