@@ -64,6 +64,7 @@
 | `bandit_config`   | Path to Bandit configuration file                                     | `pyproject.toml`      |
 | `bandit_flags`    | Extra Bandit CLI flags                                                | `""`                  |
 | `verbose`         | Enable verbose logging                                                | `false`               |
+| `summary`         | Write a findings report to the GitHub job summary                     | `false`               |
 | `tool_name`       | Tool name used in reviewdog output                                    | `bandit`              |
 | `level`           | Report level (`info`, `warning`, `error`)                             | `error`               |
 | `reporter`        | Reporter type (`github-check`, `github-pr-review`, `github-pr-check`) | `github-check`        |
@@ -94,6 +95,21 @@ jobs:
 
 > *Refer to the [this workflow](https://github.com/brunohaf/action-bandit/blob/main/.github/workflows/test.yml) for more usage examples.*
 
+### Job Summary
+
+Setting `summary: true` appends a findings report to the
+[job summary](https://docs.github.com/actions/reference/workflows-and-actions/workflow-commands#adding-a-job-summary)
+of the run:
+
+```yaml
+      - uses: brunohaf/action-bandit@v1
+        with:
+          summary: true
+```
+
+Reviewdog only annotates code that the pull request touched, as set by
+`filter_mode`. The job summary is built from the full Bandit report instead, so
+it also covers findings in files the pull request did not change.
 
 ### Screenshots
 
