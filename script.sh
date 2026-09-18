@@ -14,6 +14,7 @@ install_tool() {
   fi
 }
 
+# shellcheck disable=SC2329  # invoked by the EXIT trap, which shellcheck does not follow
 cleanup() {
   if [[ -n "${RDTMP:-}" ]] && [[ -d "${RDTMP}" ]]; then
     rm -rf "$RDTMP"
@@ -27,6 +28,15 @@ print_output() {
   echo "::group:: 🛠️ ${label} ::"
   cat "$file"
   echo '::endgroup::'
+}
+
+print_summary() {
+  local report="$1"
+
+  [ "${INPUT_SUMMARY:-false}" == "true" ] || return 0
+  [ -n "${GITHUB_STEP_SUMMARY:-}" ] || return 0
+
+  python3 "${BASE_PATH}/job_summary.py" <"$report" >>"$GITHUB_STEP_SUMMARY"
 }
 
 # Set paths and environment variables
@@ -86,5 +96,7 @@ reviewdog_rc=$?
 set +x
 echo "reviewdog exited with exit status $reviewdog_rc"
 echo '::endgroup::'
+
+print_summary "$RDTMP/bandit.json"
 
 exit $reviewdog_rc

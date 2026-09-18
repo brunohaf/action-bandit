@@ -5,30 +5,65 @@ on:
       - main
   pull_request:
 jobs:
+  test-summary:
+    name: runner / job summary rendering
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # $GITHUB_STEP_SUMMARY is a fresh file per step, so the rendering is
+      # asserted against the report directly rather than through the action.
+      - name: render a known report
+        run: |
+          set -euo pipefail
+          python -m pip install --quiet "bandit[toml]"
+          mkdir -p /tmp/scan
+          printf 'import subprocess\nsubprocess.call("ls", shell=True)\n' > /tmp/scan/vuln.py
+          printf 'def broken(:\n' > /tmp/scan/unparsable.py
+          bandit -f json -o /tmp/bandit.json -r /tmp/scan --exit-zero
+          python3 job_summary.py < /tmp/bandit.json > /tmp/summary.md
+          cat /tmp/summary.md
+
+          grep -q '^## bandit security report' /tmp/summary.md
+          grep -q '^\*\*Findings:\*\* [0-9]\+$' /tmp/summary.md
+          grep -q '^| HIGH | [0-9]\+ |$' /tmp/summary.md
+          grep -q '^### Top findings' /tmp/summary.md
+          grep -q '^### Unscanned files (1)$' /tmp/summary.md
+          grep -q 'unparsable.py' /tmp/summary.md
+          test "$(wc -c < /tmp/summary.md)" -lt 1048576
+
+      - name: render a clean report
+        run: |
+          set -euo pipefail
+          echo '{"results": [], "errors": []}' | python3 job_summary.py | grep -q 'No security issues found'
+
+      - name: survive a malformed report
+        run: |
+          set -euo pipefail
+          printf '{"results": [' | python3 job_summary.py | grep -q 'Could not parse'
+
   test-check:
     name: runner / action-bandit (github-check)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./
         with:
           github_token: ${{ secrets.github_token }}
           reporter: github-check
           level: info
-          locale: "US"
+          summary: true
 
   test-pr-check:
     if: github.event_name == 'pull_request'
     name: runner / action-bandit (github-pr-check)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./
         with:
           github_token: ${{ secrets.github_token }}
           reporter: github-pr-check
           level: warning
-          locale: "US"
           workdir: ./testdata/subdir/
 
   test-pr-review:
@@ -36,14 +71,13 @@ jobs:
     name: runner / action-bandit (github-pr-review)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./
         continue-on-error: true
         with:
           github_token: ${{ secrets.github_token }}
           reporter: github-pr-review
           level: error
-          locale: "US"
           filter_mode: file
           fail_on_error: true
       - name: check the exit code
@@ -54,7 +88,7 @@ jobs:
 #    name: runner / action-bandit (sarif)
 #    runs-on: ubuntu-latest
 #    steps:
-#      - uses: actions/checkout@v4
+#      - uses: actions/checkout@v7
 #      - uses: ./
 #        with:
 #          reporter: sarif
