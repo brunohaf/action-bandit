@@ -82,7 +82,7 @@ jobs:
     name: Bandit Security Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: brunohaf/action-bandit@v1
         with:
           github_token: ${{ secrets.github_token }}
